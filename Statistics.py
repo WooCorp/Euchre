@@ -214,6 +214,9 @@ def RankPlayers(players):
     result.index += 1
     print(result) 
 
+    result = result.drop(["WIN %", "GP Rank", "AVG TM GP Rank", "AVG OPP GP Rank", "Ranking Score"], axis=1)
+    result.to_csv("Standings/IndividualRankings.csv")
+
     return None
 
 def SeeHead2Head(player1,player2,showResults):
@@ -415,8 +418,45 @@ def Rivalries(testplayer,showResults):
 
     return None
 
+def LeagueStandings():
+    """Reads in the individual rankings and outputs them to league csvs"""
+    allrankings = pd.read_csv("Standings/IndividualRankings.csv")
+    leagueaffil = pd.read_csv("Standings/leaguesrawdata.csv")
+    rankings = []
+
+    leaguedata = [[],[],[],[]]
+    leaguedata[0] = leagueaffil["OKE"].to_list()
+    leaguedata[1] = leagueaffil["TCC"].to_list()
+    leaguedata[2] = leagueaffil["WSE"].to_list()
+    leaguedata[3] = leagueaffil["ONE"].to_list()
+
+    for i in range(len(allrankings)):
+        rankings.append(allrankings["Name"].loc[i])
+    
+    for i in range(len(leaguedata)):
+        leaguedata[i] = [j for j in leaguedata[i] if str(j) != 'nan']
+    
+    sorting = []
+    for i in range(len(leaguedata)):
+        for j in range(len(leaguedata[i])):
+            sorting.append(rankings.index(leaguedata[i][j]))
+        sorting = sorted(sorting)
+        for k in range(len(leaguedata[i])):
+            leaguedata[i][k] = rankings[sorting[0]]
+            sorting.pop(0)
+    #Leaguedata is now sorted in ascending order, time to print to csv
+    for i in range(len(leaguedata)):
+        f = open("Standings/league{}.csv".format(i+1), "w")
+        for j in range(len(leaguedata[i])):
+            f.write("{},{}\n".format(j+1,leaguedata[i][j]))
+        f.close()
+
+    return None
+
+#Uncomment to Choose Which to Run:--------------------------------------------------------------------------
 Players = PlayerData()
 RankPlayers(Players)
 #SeeHead2Head('Ben Gochanour','Nathan Woo',True)
 #Rivalries("Nathan Woo",True)
 #GetAllScenarios()
+#LeagueStandings()
