@@ -15,6 +15,43 @@ card_dict={0:"JT", 1:"JSS", 2:"AT", 3:"KT", 4:"QT", 5:"TT", 6:"NT", 7:"ASS",
          15:"JOS1", 16:"TOS1", 17:"NOS1", 18:"AOS2", 19:"KOS2", 20:"QOS2",
          21:"JOS2", 22:"TOS2", 23:"NOS2"}
 
+#Declaring constant lists for easier use later on
+OFFSUITA = [7,12,18]
+OFFSUITK = [8,13,19]
+OFFSUITQ = [9,14,20]
+OFFSUITJ = [15,21]
+OFFSUIT10 = [10,16,22]
+OFFSUIT9 = [11,17,23]
+OFFSUITS = [OFFSUIT9,OFFSUIT10,OFFSUITJ,OFFSUITQ,OFFSUITK,OFFSUITA]
+
+def CountSuits(hand):
+    """Counts the number of suits in a players hand"""
+    numtrump = 0
+    numss = 0
+    numos1 = 0
+    numos2 = 0
+
+    for card in hand:
+        if card < 7:
+            numtrump += 1
+        elif card < 12:
+            numss += 1
+        elif card < 18:
+            numos1 += 1
+        else:
+            numos2 += 1
+    
+    numsuits = 0
+    if numtrump != 0:
+        numsuits += 1
+    if numss != 0:
+        numsuits += 1
+    if numos1 != 0:
+        numsuits += 1
+    if numos2 != 0:
+        numsuits += 1
+    return [numtrump,numss,numos1,numos2,numsuits]
+
 def Deal():
     """Deals Random Cards to Players' Hands"""
     cardsout = []
@@ -38,6 +75,7 @@ def Deal():
             cardoptions.pop(cardoptions.index(card))
             PlayerHands[i].append(card)
             numcards += 1
+        PlayerHands[i] = sorted(PlayerHands[i]) #putting into ascending order
         if i == 0 or i == 2:
             PlayerHands[i].append("RedTeam")
         else: 
@@ -47,6 +85,7 @@ def Deal():
     PlayerHands[1].append(PLAYER2)
     PlayerHands[2].append(PLAYER3)
     PlayerHands[3].append(PLAYER4)
+    #PlayerHand format = [card1,card2,card3,card4,card5,Team,Name]
 
     return topcard
 
@@ -65,12 +104,51 @@ def CallSuitLogic(hand): #FIXME
 
     return [call, suit]
 
-def DealerLogic(hand): #FIXME
-    """Tells the dealer what card to discard"""
+def DealerLogic(hand):
+    """Tells the dealer what card to discard, returns card value"""
+    inithand = [0,0,0,0,0]
+    temphand = [0,0,0,0,0]
+    for j in range(5):
+        inithand[j] = hand[j] #just numericalvalues of hand
+        temphand[j] = hand[j]
+    possiblecards = []
+    basesuits = CountSuits(inithand)
 
-    card = 4 #FIXME
+    for i in range(5):
+        for j in range(5):
+            temphand[j] = inithand[j] #resetting for correct value
+        temphand[i] = 0 #generic trump value for hand
+        temphand = sorted(temphand) #putting in ascending order again
+        temp = CountSuits(temphand)
+        if temp[4] < basesuits[4]: #if by replacing that card, number of suits decreases 
+            possiblecards.append(i) #save index of card  
 
-    return card
+    if len(possiblecards) == 0: #if can't decrease number of suits, tries to make as close to less suited
+        if basesuits[4] == 1: #can't make less suited as all one suit already
+            return max(inithand) #smallest card possible discarded
+        elif basesuits[4] == 2: #two suited already (2 of 1 suit, 3 of other), can't make less suited
+            discardsuit = basesuits.index(2) #finds suit that has 2
+        else: #three suited, can't make less (1 trump, 2 of one, 2 of other)
+            for i in range(len(OFFSUITS)):
+                for j in range(len(OFFSUITS[i])):
+                    if OFFSUITS[i][j] in inithand:
+                        return OFFSUITS[i][j] #returning minimum offsuit card
+        if discardsuit == 1: #discard ss
+            return inithand[1] 
+        elif discardsuit == 2: #discard os1
+            if basesuits[1] != 0: #other option is ss
+                return inithand[4]
+            else: #other option is os2
+                return inithand[1]
+        else: #discard os2
+            return inithand[4]
+    elif len(possiblecards) == 1: #if only one card makes less suited
+        return inithand[possiblecards[0]]
+    else: #multiple choices on proper discard, discard lowest card
+        for i in range(len(OFFSUITS)):
+            for j in range(len(OFFSUITS[i])):
+                if OFFSUITS[i][j] in inithand:
+                    return OFFSUITS[i][j] #returning minimum offsuit card
 
 def Calling(topcard):
     """Gives Players Option to Order Up
@@ -88,7 +166,9 @@ def Calling(topcard):
         if calls[i] != 0: #If Called
             caller_id = PlayerHands[i][5]
             call = calls[i]
-            DealerLogic(PlayerHands[3]) #Dealer picks up card
+            discard = DealerLogic(PlayerHands[3]) #Dealer picks up card
+            discard_index = PlayerHands[3].index(discard)
+            PlayerHands[3][discard_index] = topcard
             trump = 0
             if SHOWHAPPENINGS == True:
                 if call == 1:
