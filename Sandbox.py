@@ -2,6 +2,7 @@ import random
 
 STICKTHEDEALER = True
 SHOWHAPPENINGS = True
+SCORE = 1 #Score to play to; usually 10 (1 for debugging purposes FIXME)
 PLAYER1 = "P1"
 PLAYER2 = "P2"
 PLAYER3 = "P3"
@@ -618,7 +619,7 @@ def main():
     """Main Function"""
     lastdealer = 0
 
-    while Points[0] < 10 and Points[1] < 10:
+    while Points[0] < SCORE and Points[1] < SCORE: #playing to score
         topcard = Deal()
         SetOrder(lastdealer)
         call_data = Calling(topcard)
